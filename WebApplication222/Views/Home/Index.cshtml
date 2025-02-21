@@ -1,0 +1,33 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Password</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model){
+            <tr>
+                <td>@user.Id</td>
+                <td>@user.Username</td>
+                <td><input type="password" value="@user.Password" placeholder="Current Password" class="form-control" required/></td>
+                <td><input type="submit" value="Update" class="btn btn-outline-success"/></td>
+                <td><input type="submit" value="Delete" class="btn btn-outline-danger" /></td>
+            </tr>
+        }
+       <form asp-action="InsertUser" method="POST">
+        <tr>
+            <td> </td>
+            <td> <input type="text" class="form-control" placeholder="Username" name="username" required /></td>
+            <td> <input type="password" class="form-control" placeholder="Password" name="password" required /></td>
+            <td> <input type="submit" value="Submit" classs="btn btn-ouline-primary" /></td>
+        </tr>
+       </form>
+    </tbody>
+</table>

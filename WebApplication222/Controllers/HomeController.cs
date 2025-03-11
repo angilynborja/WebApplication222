@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Http;
 using MySql.Data.MySqlClient;
 using WebApplication222.Models;
 using System.Diagnostics;
-using System.Text;
-using System.Security.Cryptography;
 using System.Collections.Generic;
 
 namespace WebApplication222.Controllers
@@ -46,6 +44,7 @@ namespace WebApplication222.Controllers
         {
             return View();
         }
+
         [HttpPost]
         public IActionResult Login(string username, string password)
         {
@@ -56,14 +55,14 @@ namespace WebApplication222.Controllers
             cmd.Parameters.AddWithValue("@username", username);
             using var reader = cmd.ExecuteReader();
 
-            if (reader.Read()) // May nahanap bang user?
+            if (reader.Read())
             {
                 string storedPassword = reader.GetString("password");
 
                 Console.WriteLine("Entered Password: " + password);
                 Console.WriteLine("Stored Password: " + storedPassword);
 
-                if (password == storedPassword) // Direktang pag-compare ng password
+                if (password == storedPassword)
                 {
                     _httpContextAccessor.HttpContext?.Session.SetString("Username", username);
 
@@ -78,8 +77,6 @@ namespace WebApplication222.Controllers
             return View();
         }
 
-
-
         public IActionResult Logout()
         {
             _httpContextAccessor.HttpContext?.Session.Clear();
@@ -91,11 +88,9 @@ namespace WebApplication222.Controllers
             using var conn = new MySqlConnection(connStr);
             conn.Open();
 
-            string hashedPassword = ComputeSha256Hash(user.Password);
-
             using var cmd = new MySqlCommand("INSERT INTO user(Username, Password) VALUES (@Username, @Password)", conn);
             cmd.Parameters.AddWithValue("@Username", user.Username);
-            cmd.Parameters.AddWithValue("@Password", hashedPassword);
+            cmd.Parameters.AddWithValue("@Password", user.Password);
             cmd.ExecuteNonQuery();
 
             return RedirectToAction("Index");
@@ -106,12 +101,12 @@ namespace WebApplication222.Controllers
             using var conn = new MySqlConnection(connStr);
             conn.Open();
 
-            string hashedPassword = ComputeSha256Hash(user.Password);
-
             using var cmd = new MySqlCommand("UPDATE user SET password = @password WHERE id = @id", conn);
             cmd.Parameters.AddWithValue("@id", user.Id);
-            cmd.Parameters.AddWithValue("@password", hashedPassword);
+            cmd.Parameters.AddWithValue("@password", user.Password);
             cmd.ExecuteNonQuery();
+
+            TempData["SuccessMessage"] = "Password updated successfully!";
 
             return RedirectToAction("Index");
         }
@@ -129,21 +124,8 @@ namespace WebApplication222.Controllers
             using var cmd = new MySqlCommand("DELETE FROM user WHERE id = @id", conn);
             cmd.Parameters.AddWithValue("@id", id);
             cmd.ExecuteNonQuery();
-            return RedirectToAction("Index");
-        }
 
-        private string ComputeSha256Hash(string rawData)
-        {
-            using (SHA256 sha256Hash = SHA256.Create())
-            {
-                byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(rawData));
-                StringBuilder builder = new StringBuilder();
-                for (int i = 0; i < bytes.Length; i++)
-                {
-                    builder.Append(bytes[i].ToString("x2"));
-                }
-                return builder.ToString();
-            }
+            return RedirectToAction("Index");
         }
 
         public List<User> GetUsers()

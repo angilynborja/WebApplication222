@@ -1,9 +1,19 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
+    string loggedInUser = Context.Session.GetString("Username");
 }
 
 <div class="container mt-4">
     <h2 class="text-center">User Management</h2>
+
+   
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show text-center" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
 
     <div class="table-responsive">
         <table class="table table-striped table-bordered">
@@ -22,29 +32,36 @@
                         <td>@user.Id</td>
                         <td>@user.Username</td>
                         <td>
-                            <form asp-action="UpdateUser" method="post" class="d-flex gap-2">
-                                <input type="hidden" name="Id" value="@user.Id" />
-                                <input type="password" name="Password" value="@user.Password" class="form-control" required />
-                                <button type="submit" class="btn btn-outline-success">Update</button>
-                            </form>
+                            @if (user.Username == loggedInUser)
+                            {
+                                <form asp-action="UpdateUser" method="post" class="d-flex gap-2">
+                                    <input type="hidden" name="Id" value="@user.Id" />
+                                    <input type="password" name="Password" class="form-control" placeholder="New Password" required />
+                                    <button type="submit" class="btn btn-outline-success">Update</button>
+                                </form>
+                                 <td>
+                           
                         </td>
+
+                            }
+                            else
+                            {
+                                <span class="text-muted">Hidden</span>
+                            }
+                        </td>
+                        
                         <td>
-                            <form asp-action="DeleteUser" method="post" onsubmit="return confirm('Are you sure you want to delete this user?');">
-                                <input type="hidden" name="id" value="@user.Id" />
+                            @if (user.Username == loggedInUser)
+                            {
                                 
-                            </form>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Not Allowed</span>
+                            }
                         </td>
                     </tr>
                 }
-
-                <tr>
-                    <form asp-action="InsertUser" method="post" class="d-flex gap-2">
-                    <td></td>
-                    <td><input type="text" class="form-control" placeholder="Username" name="Username" required /></td>
-                    <td><input type="password" class="form-control" placeholder="Password" name="Password" required /></td>
-                    <td><button type="submit" class="btn btn-outline-primary">Add User</button></td>
-                    </form>
-                </tr>
             </tbody>
         </table>
     </div>

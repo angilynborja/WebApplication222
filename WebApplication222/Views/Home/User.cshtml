@@ -1,27 +1,22 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "User Dashboard";
     string loggedInUser = Context.Session.GetString("Username");
 }
 
-<div class="container mt-4">
-    <h2 class="text-center">User Management</h2>
-
-
-   
-
-
+<div class="container mt-5 p-4 shadow-lg rounded bg-light">
+    <h2 class="text-center mb-4 text-primary">Welcome, @loggedInUser</h2>
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show text-center" role="alert">
+        <div class="alert alert-success text-center fade show" role="alert">
             @TempData["SuccessMessage"]
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
     <div class="table-responsive">
-        <table class="table table-striped table-bordered">
-            <thead class="table-dark">
+        <table class="table table-hover table-bordered text-center align-middle">
+            <thead class="bg-dark text-white">
                 <tr>
                     <th>ID</th>
                     <th>Username</th>
@@ -29,48 +24,87 @@
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="userTableBody">
                 @foreach (var user in Model)
                 {
-                    <tr>
+                    <tr class="hover-effect">
                         <td>@user.Id</td>
-                        <td>@user.Username</td>
+                        <td class="username">@user.Username</td>
                         <td>
                             @if (user.Username == loggedInUser)
                             {
-                                <form asp-action="UpdateUser" method="post" class="d-flex gap-2">
+                                <form asp-action="UpdateUser" method="post" class="d-flex justify-content-center align-items-center gap-2">
                                     <input type="hidden" name="Id" value="@user.Id" />
-                                    <input type="password" name="Password" class="form-control" placeholder="New Password" required />
-                                    <button type="submit" class="btn btn-outline-success">Update</button>
+                                    <input type="password" name="Password" class="form-control w-75 rounded-pill px-3" placeholder="New Password" required />
+                                    <button type="submit" class="btn btn-outline-info">✏ Update</button>
                                 </form>
-                                 <td>
-                           
-                        </td>
-
                             }
                             else
                             {
-                                <span class="text-muted">Hidden</span>
+                                <span class="text-muted">🔒 Hidden</span>
                             }
                         </td>
-                        
                         <td>
                             @if (user.Username == loggedInUser)
                             {
-                                
+                                <span class="text-muted">✅ You</span>
                             }
                             else
                             {
-                                <span class="text-muted">Not Allowed</span>
+                                <span class="text-muted">⛔ Not Allowed</span>
                             }
                         </td>
                     </tr>
                 }
+
+             
+                <tr>
+                    <form asp-action="InsertUser" method="post" onsubmit="return validateUsername();">
+                    <td></td>
+                    <td>
+                        <input type="text" id="newUsername" name="Username" class="form-control" placeholder="New Username" required onkeyup="checkUsername()">
+                        <small id="usernameError" class="text-danger"></small>
+                    </td>
+                    <td><input type="password" name="Password" class="form-control" placeholder="Password" required></td>
+                    <td><button type="submit" id="submitBtn" class="btn btn-success">➕ Add User</button></td>
+                    </form>
+                </tr>
             </tbody>
         </table>
     </div>
 
-    <form asp-action="Logout" method="post" class="text-center mt-3">
-        <button type="submit" class="btn btn-outline-warning">Log Out</button>
-    </form>
+    <div class="text-center mt-4">
+        <form asp-action="Logout" method="post">
+            <button type="submit" class="btn btn-warning rounded-pill">🚪 Log Out</button>
+        </form>
+    </div>
 </div>
+
+<style>
+    .hover-effect:hover {
+        background-color: rgba(0, 123, 255, 0.1);
+        transition: 0.3s;
+    }
+</style>
+
+<script>
+    function checkUsername() {
+        let newUsername = document.getElementById("newUsername").value.toLowerCase();
+        let existingUsernames = Array.from(document.getElementsByClassName("username")).map(el => el.innerText.toLowerCase());
+        let errorMsg = document.getElementById("usernameError");
+        let submitBtn = document.getElementById("submitBtn");
+
+        if (existingUsernames.includes(newUsername)) {
+            errorMsg.textContent = "⚠ Username already exists!";
+            submitBtn.disabled = true;
+        } else {
+            errorMsg.textContent = "";
+            submitBtn.disabled = false;
+        }
+    }
+
+    function validateUsername() {
+        let errorMsg = document.getElementById("usernameError").textContent;
+        return errorMsg === "";
+    }
+</script>

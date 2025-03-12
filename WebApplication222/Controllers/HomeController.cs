@@ -19,13 +19,21 @@ namespace WebApplication222.Controllers
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public IActionResult Index()
+        public IActionResult Index(string searchQuery = "", int page = 1)
         {
             var username = _httpContextAccessor.HttpContext?.Session.GetString("Username");
 
             if (username?.EndsWith("@admin") == true)
             {
-                return View("Index", GetUsers());
+                int pageSize = 10;
+                var users = GetUsersWithSearch(searchQuery, page, pageSize);
+                int totalUsers = GetTotalUserCount(searchQuery);
+
+                ViewBag.SearchQuery = searchQuery;
+                ViewBag.CurrentPage = page;
+                ViewBag.TotalPages = (int)Math.Ceiling(totalUsers / (double)pageSize);
+
+                return View("Index", users);
             }
             else if (username?.EndsWith("@user") == true)
             {
@@ -58,9 +66,6 @@ namespace WebApplication222.Controllers
             if (reader.Read())
             {
                 string storedPassword = reader.GetString("password");
-
-                Console.WriteLine("Entered Password: " + password);
-                Console.WriteLine("Stored Password: " + storedPassword);
 
                 if (password == storedPassword)
                 {
@@ -107,15 +112,19 @@ namespace WebApplication222.Controllers
             cmd.ExecuteNonQuery();
 
             TempData["SuccessMessage"] = "Password updated successfully!";
-
             return RedirectToAction("Index");
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult DeleteUser(int id)
         {
-            if (_httpContextAccessor.HttpContext?.Session.GetString("Username") != "admin@admin")
+            var username = _httpContextAccessor.HttpContext?.Session.GetString("Username");
+
+            if (string.IsNullOrEmpty(username) || !username.EndsWith("@admin"))
             {
-                return Unauthorized();
+                _logger.LogWarning("Unauthorized delete attempt.");
+                return RedirectToAction("Login");
             }
 
             using var conn = new MySqlConnection(connStr);
@@ -125,6 +134,7 @@ namespace WebApplication222.Controllers
             cmd.Parameters.AddWithValue("@id", id);
             cmd.ExecuteNonQuery();
 
+            TempData["SuccessMessage"] = "User deleted successfully!";
             return RedirectToAction("Index");
         }
 
@@ -147,6 +157,42 @@ namespace WebApplication222.Controllers
                 });
             }
             return users;
+        }
+
+        public List<User> GetUsersWithSearch(string searchQuery, int page, int pageSize)
+        {
+            var users = new List<User>();
+            using var conn = new MySqlConnection(connStr);
+            conn.Open();
+
+            int offset = (page - 1) * pageSize;
+
+            using var cmd = new MySqlCommand("SELECT * FROM user WHERE username LIKE @searchQuery ORDER BY id LIMIT @pageSize OFFSET @offset", conn);
+            cmd.Parameters.AddWithValue("@searchQuery", "%" + searchQuery + "%");
+            cmd.Parameters.AddWithValue("@pageSize", pageSize);
+            cmd.Parameters.AddWithValue("@offset", offset);
+            using var reader = cmd.ExecuteReader();
+
+            while (reader.Read())
+            {
+                users.Add(new User
+                {
+                    Id = reader.GetInt32("id"),
+                    Username = reader.GetString("username"),
+                    Password = reader.GetString("password")
+                });
+            }
+            return users;
+        }
+
+        public int GetTotalUserCount(string searchQuery = "")
+        {
+            using var conn = new MySqlConnection(connStr);
+            conn.Open();
+
+            using var cmd = new MySqlCommand("SELECT COUNT(*) FROM user WHERE username LIKE @searchQuery", conn);
+            cmd.Parameters.AddWithValue("@searchQuery", "%" + searchQuery + "%");
+            return Convert.ToInt32(cmd.ExecuteScalar());
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
